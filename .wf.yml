@@ -1,0 +1,26 @@
+---
+# REQUIRED: whiteface username and token 
+token:
+username:
+
+# REQUIRED: whiteface feed names
+feed-email-addresses:
+feed-urls:
+feed-uce-ip:
+
+# REQUIRED: mail server hostname, this is used to identify the
+# correct received headers with parsing for ip addresses seen 
+# delivering spam
+
+hostname:
+
+# Optional: exclude is a list of strings that you want to sanitize
+# before sending to whiteface. the list of strings in exclude will
+# be applied to:
+#   - Email From Address
+#   - Email Subject
+#   - Email address found in the message body
+# the string specified will be replaed with "<redacted>"
+
+exclude:
+ - 'example.com'
