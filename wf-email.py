@@ -220,7 +220,7 @@ def parse_received_headers(results):
     adata = {}
     data = {}
 
-    data['feed'] = config['feed-email-addresses']
+    data['feed'] = config['feed-uce-ip']
     data['tags'] = 'uce,uce-ipaddress'
     data['description'] = 'ip addresses of hosts seen delivering unsolicited commercial email (spam)'
 
