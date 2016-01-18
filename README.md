@@ -17,18 +17,29 @@ A script to submit email intelligence to whiteface
   1. Select your username
   1. Select "tokens"
   1. Select "Generate Token
-1. A Whiteface feed; within Whiteface
-  1. Select (the plus sign)
-  1. Select Feed
-  1. Choose a feed name (e.g. port scanners)
-  1. Choose a feed description (hosts blocked in firewall logs)
+1. Create three feeds on Whiteface (uce-urls, uce-ip, uce-email-addresses)
+  1. A Whiteface feed; within Whiteface
+    1. Select (the plus sign)
+    1. Select Feed
+    1. Choose a feed name (e.g. port scanners)
+    1. Choose a feed description (hosts blocked in firewall logs)
 1. A Linux mail server with procmail installed
 
 ## Install
 
 1. SSH into your email server with procmail installed
 1. git clone the wf-email repo
+
+  ```bash
+  git clone https://github.com/giovino/wf-email.git
+  ```
 1. Create a [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/#basic-usage) within wf-email directory
+
+  ```bash
+ cd wf-email
+ virtualenv venv
+ source venv/bin/activate
+  ```
 1. Install [py-cgmail](https://github.com/csirtgadgets/py-cgmail) and [py-whitefacesdk](https://github.com/csirtgadgets/py-whitefacesdk)
 within the virtual environment.
 1. Copy the .wf.yml to your home directory
