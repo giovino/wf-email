@@ -43,6 +43,7 @@ A script to submit email intelligence to whiteface
 1. Install [py-cgmail](https://github.com/csirtgadgets/py-cgmail) and [py-whitefacesdk](https://github.com/csirtgadgets/py-whitefacesdk)
 within the virtual environment.
 1. Copy the .wf.yml to your home directory
+
   ```bash
   cp .wf.yml ~/.wf.yml
   ```
@@ -50,7 +51,6 @@ within the virtual environment.
 1. Leverage procmail to feed spam email through standard in. This is just an example, you will want to customize
 it appropriately.
 
- ```
 # Process spam emails to have the email addresses in the message body submitted
 # to whiteface
 :0 c
