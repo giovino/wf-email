@@ -9,8 +9,8 @@ import json
 import re
 import yaml
 
-from whitefacesdk.client import Client
-from whitefacesdk.indicator import Indicator
+from csirtgsdk.client import Client
+from csirtgsdk.indicator import Indicator
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
