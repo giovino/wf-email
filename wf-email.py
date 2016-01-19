@@ -44,7 +44,7 @@ def filter(indicator):
     """
 
     A function to search through a list of strings that have been
-    specified to be excluded for submission to whiteface
+    specified to be excluded for submission to csirtg.io
 
     :param indicator: string
     :return: boolean
@@ -65,7 +65,7 @@ def sanitize(indicator):
     """
 
     Replace any strings in the exclude list with the string <redacted> prior
-    to submitting to whiteface
+    to submitting to csirtg
 
     :param indicator: string
     :return: string
@@ -81,9 +81,9 @@ def sanitize(indicator):
     return indicator
 
 
-def whiteface_submit(data):
+def csirtg_submit(data):
     """
-    a function to sumbit data to whiteface
+    a function to sumbit data to csirtg.io
 
     :param data: is a dictionary containing:
         {
@@ -103,7 +103,7 @@ def whiteface_submit(data):
         ret = Indicator(c, data).submit()
 
         if ret['indicator']['location']:
-            logger.debug("logged to whiteface {0}".format(ret['indicator']['location']))
+            logger.debug("logged to csirtg.io {0}".format(ret['indicator']['location']))
             return True
         else:
             logger.debug("Failed to receive a indicator location url")
@@ -147,8 +147,8 @@ def parse_urls(results):
 
                 data['indicator'] = url
 
-                # submit indicator to whiteface
-                submission_result = whiteface_submit(data)
+                # submit indicator to csirtg.io
+                submission_result = csirtg_submit(data)
 
                 if submission_result:
                     submission_count += 1
@@ -197,8 +197,8 @@ def parse_email_addresses(results):
 
                     data['indicator'] = email_address
 
-                    # submit indicator to whiteface
-                    submission_result = whiteface_submit(data)
+                    # submit indicator to csirtg.io
+                    submission_result = csirtg_submit(data)
 
                     if submission_result:
                         submission_count += 1
@@ -267,8 +267,8 @@ def parse_received_headers(results):
             if adata:
                 data['comment'] = json.dumps(adata)
 
-            # submit indicator to whiteface
-            submission_result = whiteface_submit(data)
+            # submit indicator to csirtg.io
+            submission_result = csirtg_submit(data)
 
             if submission_result:
                 submission_count += 1
@@ -285,7 +285,7 @@ def parse_received_headers(results):
 
 def main():
     """
-    A script to parse spam emails and submit threat intelligence to whiteface.
+    A script to parse spam emails and submit threat intelligence to csirtg.io.
 
     :return: sys.exit()
     """
@@ -337,15 +337,15 @@ def main():
     if results:
         # parse urls out of the message body
         submission_count = parse_urls(results)
-        logger.info("{0},urls,submitted to whiteface".format(submission_count))
+        logger.info("{0},urls,submitted to csirtg.io".format(submission_count))
 
         # parse email addresses out of message body
         submission_count = parse_email_addresses(results)
-        logger.info("{0},email-addresses,submitted to whiteface".format(submission_count))
+        logger.info("{0},email-addresses,submitted to csirtg.io".format(submission_count))
 
         # parse ip addresses out of received headers
         submission_count = parse_received_headers(results)
-        logger.info("{0},ip-addresses,submitted to whiteface".format(submission_count))
+        logger.info("{0},ip-addresses,submitted to csirtg.io".format(submission_count))
 
     else:
         logger.error("email did not parse correctly, exiting")
