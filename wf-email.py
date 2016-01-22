@@ -24,23 +24,7 @@ LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s[%(lineno)s] - %(message)s'
 logger = logging.getLogger(__name__)
 
 
-# load config file from users homes directory (e.g: ~/)
-try:
-    with open(os.path.expanduser("~/.csirtg.yml"), 'r') as stream:
-        config = yaml.load(stream)
-except Exception as e:
-    logger.error("Cannot load the configuration file: {0}".format(e))
-
-# test to ensure required values are specified in the config file
-required_config = ['token', 'username', 'feed-email-addresses', 'feed-urls', 'feed-uce-ip', 'hostname']
-
-for required in required_config:
-    if not config[required]:
-        err = "Required config value \"{0}\" is empty".format(required)
-        raise RuntimeError(err)
-
-
-def filter(indicator):
+def ffilter(config, indicator):
     """
 
     A function to search through a list of strings that have been
@@ -61,11 +45,11 @@ def filter(indicator):
             return False
 
 
-def sanitize(indicator):
+def sanitize(config, indicator):
     """
 
     Replace any strings in the exclude list with the string <redacted> prior
-    to submitting to csirtg
+    to filtering to csirtg
 
     :param indicator: string
     :return: string
@@ -81,11 +65,13 @@ def sanitize(indicator):
     return indicator
 
 
-def csirtg_submit(data):
+def csirtg_submit(config, data):
     """
     a function to sumbit data to csirtg.io
 
+    :param config: dict of config values
     :param data: is a dictionary containing:
+
         {
             'feed': [string],
             'tags': [comma seperated string],
@@ -114,9 +100,11 @@ def csirtg_submit(data):
 
         return False
 
-def parse_urls(results):
+
+def parse_urls(config, results):
     """
 
+    :param config: dict of config values
     :param results: list of json objects from cgmail
     :return: int
     """
@@ -148,7 +136,7 @@ def parse_urls(results):
                 data['indicator'] = url
 
                 # submit indicator to csirtg.io
-                submission_result = csirtg_submit(data)
+                submission_result = csirtg_submit(config, data)
 
                 if submission_result:
                     submission_count += 1
@@ -159,9 +147,10 @@ def parse_urls(results):
     return submission_count
 
 
-def parse_email_addresses(results):
+def parse_email_addresses(config, results):
     """
 
+    :param config: dict of config values
     :param results: list of json objects from cgmail
     :return: int
     """
@@ -179,7 +168,7 @@ def parse_email_addresses(results):
         try:
             for email_address in result['body_email_addresses']:
 
-                if filter(email_address):
+                if ffilter(config, email_address):
                     # skip the indicator as it was found in the excludes list
                     logger.info("skipping {0} as it was marked for exclusion".format(email_address))
                     continue
@@ -188,9 +177,9 @@ def parse_email_addresses(results):
                     if 'date' in result['headers']:
                         adata['date'] = result['headers']['date'][0]
                     if 'from' in result['headers']:
-                        adata['from'] = sanitize(result['headers']['from'][0])
+                        adata['from'] = sanitize(config, result['headers']['from'][0])
                     if 'subject' in result['headers']:
-                        adata['subject'] = sanitize(result['headers']['subject'][0])
+                        adata['subject'] = sanitize(config, result['headers']['subject'][0])
 
                     if adata:
                         data['comment'] = json.dumps(adata)
@@ -198,7 +187,7 @@ def parse_email_addresses(results):
                     data['indicator'] = email_address
 
                     # submit indicator to csirtg.io
-                    submission_result = csirtg_submit(data)
+                    submission_result = csirtg_submit(config, data)
 
                     if submission_result:
                         submission_count += 1
@@ -209,9 +198,10 @@ def parse_email_addresses(results):
     return submission_count
 
 
-def parse_received_headers(results):
+def parse_received_headers(config, results):
     """
 
+    :param config: dict of config values
     :param results:
     :return: int
     """
@@ -260,15 +250,15 @@ def parse_received_headers(results):
             if 'date' in result['headers']:
                 adata['date'] = result['headers']['date'][0]
             if 'from' in result['headers']:
-                adata['from'] = sanitize(result['headers']['from'][0])
+                adata['from'] = sanitize(config, result['headers']['from'][0])
             if 'subject' in result['headers']:
-                adata['subject'] = sanitize(result['headers']['subject'][0])
+                adata['subject'] = sanitize(config, result['headers']['subject'][0])
 
             if adata:
                 data['comment'] = json.dumps(adata)
 
             # submit indicator to csirtg.io
-            submission_result = csirtg_submit(data)
+            submission_result = csirtg_submit(config, data)
 
             if submission_result:
                 submission_count += 1
@@ -276,7 +266,7 @@ def parse_received_headers(results):
             return submission_count
 
         except KeyError:
-            pass # dont care
+            pass  # don't care
         except Exception as e:
             print("Error: {}".format(e))
 
@@ -287,7 +277,7 @@ def main():
     """
     A script to parse spam emails and submit threat intelligence to csirtg.io.
 
-    :return: sys.exit()
+    :return: int
     """
 
     # Setup
@@ -319,6 +309,23 @@ def main():
 
     options = vars(args)
 
+    # load config file from users homes directory (e.g: ~/)
+    try:
+        with open(os.path.expanduser("~/.csirtg.yml"), 'r') as stream:
+            config = yaml.load(stream)
+    except FileNotFoundError as e:
+        logger.error("Cannot load the configuration file: {0}".format(e))
+        return 1
+
+    # test to ensure required values are specified in the config file
+    required_config = ['token', 'username', 'feed-email-addresses', 'feed-urls', 'feed-uce-ip', 'hostname']
+
+    for required in required_config:
+        if not config[required]:
+            err = "Required config value \"{0}\" is empty".format(required)
+            print(err)
+            return 1
+
     # get email from file or stdin
     if options.get("file"):
         logger.debug("open email through file handle")
@@ -336,22 +343,22 @@ def main():
 
     if results:
         # parse urls out of the message body
-        submission_count = parse_urls(results)
+        submission_count = parse_urls(config, results)
         logger.info("{0},urls,submitted to csirtg.io".format(submission_count))
 
         # parse email addresses out of message body
-        submission_count = parse_email_addresses(results)
+        submission_count = parse_email_addresses(config, results)
         logger.info("{0},email-addresses,submitted to csirtg.io".format(submission_count))
 
         # parse ip addresses out of received headers
-        submission_count = parse_received_headers(results)
+        submission_count = parse_received_headers(config, results)
         logger.info("{0},ip-addresses,submitted to csirtg.io".format(submission_count))
 
     else:
         logger.error("email did not parse correctly, exiting")
-        sys.exit(1)
+        return 1
 
-    return sys.exit(0)
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
