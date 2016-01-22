@@ -268,7 +268,7 @@ def parse_received_headers(config, results):
         except KeyError:
             pass  # don't care
         except Exception as e:
-            print("Error: {}".format(e))
+            logger.error(e)
 
         return submission_count
 
