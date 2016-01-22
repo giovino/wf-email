@@ -42,12 +42,12 @@ A script to submit email intelligence to csirtg
   ```
 1. Install [py-cgmail](https://github.com/csirtgadgets/py-cgmail) and [py-csirtgsdk](https://github.com/csirtgadgets/py-csirtgsdk)
 within the virtual environment.
-1. Copy the .wf.yml to your home directory
+1. Copy the config file '.csirtg.yml' to your home directory
 
   ```bash
-  cp .wf.yml ~/.wf.yml
+  cp .csirtg.yml ~/.csirtg.yml
   ```
-1. Fill out the required values in the .wf.yml file
+1. Fill out the required values in the .csirtg.yml file
 1. Leverage procmail to feed spam email through standard in. This is just an example, you will want to customize
 it appropriately.
 
