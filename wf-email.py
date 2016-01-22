@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # load config file from users homes directory (e.g: ~/)
 try:
-    with open(os.path.expanduser("~/.wf.yml"), 'r') as stream:
+    with open(os.path.expanduser("~/.csirtg.yml"), 'r') as stream:
         config = yaml.load(stream)
 except Exception as e:
     logger.error("Cannot load the configuration file: {0}".format(e))
