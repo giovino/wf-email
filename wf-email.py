@@ -322,8 +322,7 @@ def main():
 
     for required in required_config:
         if not config[required]:
-            err = "Required config value \"{0}\" is empty".format(required)
-            print(err)
+            logger.error("Required config value \"{0}\" is empty".format(required))
             return 1
 
     # get email from file or stdin
