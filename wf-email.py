@@ -23,6 +23,8 @@ requests.packages.urllib3.disable_warnings()
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s[%(lineno)s] - %(message)s'
 logger = logging.getLogger(__name__)
 
+RE_EMAIL_ADDRESS = re.compile('([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)')
+
 
 def ffilter(config, indicator):
     """
@@ -40,10 +42,8 @@ def ffilter(config, indicator):
         if regex.search(indicator):
             # indicator found
             return True
-        else:
-            # indicator not found
-            return False
 
+    return False
 
 def sanitize(config, indicator):
     """
@@ -143,6 +143,64 @@ def parse_urls(config, results):
 
         except Exception as e:
             logger.error(e)
+
+    return submission_count
+
+def parse_email_address_headers(config, header, results):
+    """
+    parse out the return-path value from the email headers and sumit the
+    indicator to csirtg.io
+
+    :param config: dict of config values
+    :param header: string - of the header to be parsed for an email address
+    :param results: list of json objects from cgmail
+    :return: int
+    """
+    submission_count = 0
+
+    adata = {}
+    data = {}
+
+    data['feed'] = config['feed-email-addresses']
+    data['tags'] = "uce,email-address"
+    data['description'] = "email address parsed out of the header: {0}".format(header)
+
+    for result in results:
+        try:
+            # parse through the list of received headers
+            for item in result['headers'][header]:
+
+                email_address = re.findall(RE_EMAIL_ADDRESS, item)
+
+                if email_address:
+                    if ffilter(config, email_address[0]):
+                        # skip the indicator as it was found in the excludes list
+                        logger.info("skipping {0} as it was marked for exclusion".format(email_address[0]))
+                        continue
+                    else:
+
+                        if 'date' in result['headers']:
+                            adata['date'] = result['headers']['date'][0]
+                        if 'from' in result['headers']:
+                            adata['from'] = sanitize(config, result['headers']['from'][0])
+                        if 'subject' in result['headers']:
+                            adata['subject'] = sanitize(config, result['headers']['subject'][0])
+
+                        if adata:
+                            data['comment'] = json.dumps(adata)
+
+                        data['indicator'] = email_address[0]
+
+                        # submit indicator to csirtg.io
+                        submission_result = csirtg_submit(config, data)
+
+                        if submission_result:
+                            submission_count += 1
+
+        except KeyError:
+            pass
+        except Exception as e:
+            raise(e)
 
     return submission_count
 
@@ -352,6 +410,12 @@ def main():
         # parse ip addresses out of received headers
         submission_count = parse_received_headers(config, results)
         logger.info("{0},ip-addresses,submitted to csirtg.io".format(submission_count))
+
+        # parse email address seen in return-path header
+        email_address_address_headers = ['return-path', 'from', 'reply-to']
+        for value in email_address_address_headers:
+            submission_count = parse_email_address_headers(config, value, results)
+            logger.info("{0},email-addresses,submitted to csirtg.io".format(submission_count))
 
     else:
         logger.error("email did not parse correctly, exiting")
