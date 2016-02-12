@@ -98,7 +98,7 @@ def csirtg_submit(config, data):
             return False
 
     except Exception as e:
-        raise (e)
+        logger.error(e)
 
         return False
 
@@ -159,7 +159,7 @@ def parse_attachments(config, results):
                         submission_count += 1
 
         except Exception as e:
-            raise(e)
+            logger.error(e)
 
     return submission_count
 
