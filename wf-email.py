@@ -8,6 +8,8 @@ import textwrap
 import json
 import re
 import yaml
+import hashlib
+import base64
 
 from csirtgsdk.client import Client
 from csirtgsdk.indicator import Indicator
@@ -101,6 +103,67 @@ def csirtg_submit(config, data):
         return False
 
 
+def parse_attachments(config, results):
+    """
+
+    :param config: dict of config values
+    :param results: list of json objects from cgmail
+    :return: int
+    """
+    submission_count = 0
+
+    adata = {}
+    data = {}
+
+    data['feed'] = config['feed-uce-attachments']
+    data['tags'] = 'uce,uce-attachments'
+    data['description'] = 'attachments sourced from unsolicited commercial email (spam)'
+
+    for result in results:
+        try:
+            for part in result['mail_parts']:
+                if part['base64_encoded_payload']:
+
+                    if 'date' in result['headers']:
+                        adata['date'] = result['headers']['date'][0]
+                    if 'from' in result['headers']:
+                        adata['from'] = sanitize(config, result['headers']['from'][0])
+                    if 'subject' in result['headers']:
+                        adata['subject'] = sanitize(config, result['headers']['subject'][0])
+
+                    if adata:
+                        data['comment'] = json.dumps(adata)
+
+                    if part['sanitized_filename']:
+                        data['attachment_name'] = part['sanitized_filename']
+                    elif part['filename']:
+                        data['attachment_name'] = part['filename']
+                    else:
+                        data['attachment_name'] = None
+
+                    # decode so we can create sha1 hash of file
+                    attachment = base64.b64decode(part['base64_encoded_payload'])
+
+                    # set sha1 has as the indicator
+                    data['indicator'] = hashlib.sha1(attachment).hexdigest()
+
+                    data['attachment'] = part['base64_encoded_payload'].decode("utf-8")
+
+                    # submit indicator to csirtg.io
+                    try:
+                        submission_result = csirtg_submit(config, data)
+                    except Exception as e:
+                        logger.error(e)
+
+                    if submission_result:
+                        submission_count += 1
+
+        except Exception as e:
+            logger.error(e)
+
+    return submission_count
+
+
 def parse_urls(config, results):
     """
 
@@ -119,16 +182,15 @@ def parse_urls(config, results):
                           'email (spam)'
 
     for result in results:
-
         try:
             for url in result['urls']:
 
                 if 'date' in result['headers']:
                     adata['date'] = result['headers']['date'][0]
                 if 'from' in result['headers']:
-                    adata['from'] = result['headers']['from'][0]
+                    adata['from'] = sanitize(config, result['headers']['from'][0])
                 if 'subject' in result['headers']:
-                    adata['subject'] = result['headers']['subject'][0]
+                    adata['subject'] = sanitize(config, result['headers']['subject'][0])
 
                 if adata:
                     data['comment'] = json.dumps(adata)
@@ -416,6 +478,10 @@ def main():
         for value in email_address_address_headers:
             submission_count = parse_email_address_headers(config, value, results)
             logger.info("{0},email-addresses,submitted to csirtg.io".format(submission_count))
+
+        # parse email attachments
+        submission_count = parse_attachments(config, results)
+        logger.info("{0},attachments,submitted to csirtg.io".format(submission_count))
 
     else:
         logger.error("email did not parse correctly, exiting")
