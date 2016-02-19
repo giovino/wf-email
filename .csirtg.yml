@@ -1,12 +1,13 @@
 ---
-# REQUIRED: whiteface username and token 
+# REQUIRED: csirtg username and token 
 token:
 username:
 
-# REQUIRED: whiteface feed names
+# REQUIRED: csirtg feed names
 feed-email-addresses:
 feed-urls:
 feed-uce-ip:
+feed-uce-attachments:
 
 # REQUIRED: mail server hostname, this is used to identify the
 # correct received headers with parsing for ip addresses seen 
@@ -15,7 +16,7 @@ feed-uce-ip:
 hostname:
 
 # Optional: exclude is a list of strings that you want to sanitize
-# before sending to whiteface. the list of strings in exclude will
+# before sending to csirtg. the list of strings in exclude will
 # be applied to:
 #   - Email From Address
 #   - Email Subject
