@@ -185,23 +185,28 @@ def parse_urls(config, results):
         try:
             for url in result['urls']:
 
-                if 'date' in result['headers']:
-                    adata['date'] = result['headers']['date'][0]
-                if 'from' in result['headers']:
-                    adata['from'] = sanitize(config, result['headers']['from'][0])
-                if 'subject' in result['headers']:
-                    adata['subject'] = sanitize(config, result['headers']['subject'][0])
+                if ffilter(config, url):
+                        # skip the indicator as it was found in the excludes list
+                        logger.info("skipping {0} as it was marked for exclusion".format(url))
+                        continue
+                else:
+                    if 'date' in result['headers']:
+                        adata['date'] = result['headers']['date'][0]
+                    if 'from' in result['headers']:
+                        adata['from'] = sanitize(config, result['headers']['from'][0])
+                    if 'subject' in result['headers']:
+                        adata['subject'] = sanitize(config, result['headers']['subject'][0])
 
-                if adata:
-                    data['comment'] = json.dumps(adata)
+                    if adata:
+                        data['comment'] = json.dumps(adata)
 
-                data['indicator'] = url
+                    data['indicator'] = url
 
-                # submit indicator to csirtg.io
-                submission_result = csirtg_submit(config, data)
+                    # submit indicator to csirtg.io
+                    submission_result = csirtg_submit(config, data)
 
-                if submission_result:
-                    submission_count += 1
+                    if submission_result:
+                        submission_count += 1
 
         except Exception as e:
             logger.error(e)
@@ -262,7 +267,7 @@ def parse_email_address_headers(config, header, results):
         except KeyError:
             pass
         except Exception as e:
-            raise(e)
+            logger.error(e)
 
     return submission_count
 
